@@ -12,7 +12,10 @@ import { router as reservationRouter } from './routes/reservation.routes';
 import googleBooksRouter from './routes/googleBooks.routes';
 
 const app: Express = express();
-process.loadEnvFile();
+
+// Use dotenv for environment variables
+import dotenv from 'dotenv';
+dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 
@@ -78,23 +81,21 @@ app.use((req: Request, res: Response) => {
 // Export app for Vercel
 export default app;
 
-// Inicializar servidor solo si no es Vercel
-if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
-    const startServer = async () => {
-        try {
-            await connectDB();
-            
-            app.listen(PORT, () => {
-                console.log(`🚀 BiblioIcesi API running on port ${PORT}`);
-                console.log(`📚 API Documentation: http://localhost:${PORT}/`);
-                console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
-                console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-            });
-        } catch (error) {
-            console.error('❌ Failed to start server:', error);
-            process.exit(1);
-        }
-    };
+// Always start server (Render runs as a standard Node server)
+const startServer = async () => {
+    try {
+        await connectDB();
+        
+        app.listen(PORT, () => {
+            console.log(`🚀 BiblioIcesi API running on port ${PORT}`);
+            console.log(`📚 API Documentation: http://localhost:${PORT}/`);
+            console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
+            console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        });
+    } catch (error) {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    }
+};
 
-    startServer();
-}
+startServer();
