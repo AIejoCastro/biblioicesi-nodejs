@@ -1,273 +1,181 @@
-# BiblioIcesi API
+# Seguridad y calidad de código en Node.js con GitHub Actions
 
-Sistema de gestión de biblioteca desarrollado con Node.js, TypeScript y MongoDB.
+Este repositorio incluye dos pipelines de integración continua (CI) diseñados para analizar automáticamente la calidad del código, la cobertura de pruebas y las vulnerabilidades de seguridad del proyecto.
 
-## 🚀 Características
+Ambos pipelines se ejecutan mediante GitHub Actions, y sus resultados aparecen directamente en los paneles de GitHub.
 
-- **Gestión de Usuarios**: Autenticación JWT, roles y permisos (RBAC)
-- **Catálogo de Libros**: CRUD completo con validación ISBN
-- **Gestión de Ejemplares**: Control de disponibilidad y estado
-- **Sistema de Préstamos**: Creación, devolución y cálculo de mora
-- **Reservas**: Sistema de reservas con expiración automática
-- **Integración Google Books**: Enriquecimiento de metadatos
-- **Reportes**: Estadísticas y exportación de datos
-- **Tests**: Cobertura de código del 64%+ con tests unitarios e integración
+## 1. Pipeline: Análisis de calidad con SonarQube Cloud
 
-## 🛠️ Stack Tecnológico
+### Archivo
 
-- **Backend**: Node.js + Express + TypeScript
-- **Base de Datos**: MongoDB (desarrollo local) / MongoDB Atlas (producción)
-- **Autenticación**: JWT + bcrypt
-- **Testing**: Jest + Supertest + MongoDB Memory Server
-- **Despliegue**: Vercel (API) + MongoDB Atlas
-- **Integración**: Google Books API
+`.github/workflows/build.yml`
 
-## 📋 Prerrequisitos
+### Descripción
 
-- Node.js 18+
-- MongoDB (local o Atlas)
-- npm o yarn
+Este workflow ejecuta SonarQube Cloud en cada push o pull request al repositorio.
+Su función es analizar el código fuente y generar métricas de calidad, incluyendo:
 
-## 🔧 Instalación
+* Cobertura de pruebas unitarias
+* Complejidad ciclomática
+* Code smells
+* Bugs y vulnerabilidades
+* Duplicación de código
 
-1. **Clonar el repositorio**
-```bash
-git clone <repository-url>
-cd biblioicesi-api
+Los resultados se visualizan en tu panel de SonarQube Cloud.
+
+### Configuración básica
+
+En el archivo `sonar-project.properties` debes definir:
+
+```properties
+sonar.projectKey=AIejoCastro_biblioicesi-nodejs
+sonar.organization=aiejocastro
+
+sonar.projectName=biblioicesi-nodejs
+sonar.projectVersion=1.0
+
+sonar.sourceEncoding=UTF-8
+
+sonar.sources=src
+sonar.tests=__tests__
+
+sonar.test.inclusions=**/*.test.ts,**/*.spec.ts
+
+sonar.exclusions=node_modules/**,coverage/**
+
+sonar.javascript.lcov.reportPaths=coverage/lcov.info
 ```
 
-2. **Instalar dependencias**
-```bash
-npm install
-```
+### Ejemplo de pipeline
 
-3. **Configurar variables de entorno**
-```bash
-cp env.example .env
-```
+```yaml
+name: Build and Analyze
 
-Editar `.env` con tus configuraciones:
-```env
-NODE_ENV=development
-PORT=3000
-SECRET=your_jwt_secret_key_here
-MONGODB_URI=mongodb+srv://<user>:<pass>@cluster0.xxxxx.mongodb.net/biblioicesi?retryWrites=true&w=majority
-MONGODB_DB=biblioicesi
-MONGODB_TEST_URI=mongodb://localhost:27017/biblioicesi_test
-GOOGLE_BOOKS_API_KEY=your_google_books_api_key_here
-```
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
 
-4. **Configurar índices de base de datos**
-```bash
-npm run ensure-indexes
-```
+jobs:
+  sonarqube:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
 
-5. **Sembrar datos iniciales (RBAC + admin)**
-```bash
-npm run seed
-```
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-6. **Iniciar servidor de desarrollo**
-```bash
-npm run dev
-```
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20 
 
-## 🧪 Testing
+      - name: Install dependencies
+        run: npm ci
 
-### Tests Unitarios
-```bash
-# Ejecutar todos los tests
-npm test
+      - name: Run tests and generate coverage
+        run: npm test -- --coverage
 
-# Tests con cobertura
-npm run test:coverage
-
-# Tests en modo watch
-npm run test:watch
-```
-
-### Tests de Integración
-```bash
-# Tests de integración con base de datos
-npm run test:integration
-```
-<img width="890" height="421" alt="image" src="https://github.com/user-attachments/assets/5894fb56-e56e-44a9-9c47-a509cec0d091" />
-
-POSTMAN
-
-<img width="1098" height="567" alt="image" src="https://github.com/user-attachments/assets/a0cb9528-dc25-4816-9c16-5142715db208" />
-
-## 📚 API Endpoints
-
-### Autenticación
-- `POST /api/auth/login` - Iniciar sesión
-- `POST /api/auth/register` - Registro de usuario
-
-### Usuarios
-- `GET /api/users` - Listar usuarios (Admin)
-- `GET /api/users/profile` - Perfil del usuario
-- `PUT /api/users/profile` - Actualizar perfil
-- `DELETE /api/users/:id` - Eliminar usuario (Admin)
-
-### Libros
-- `GET /api/books` - Listar libros
-- `GET /api/books/:id` - Obtener libro
-- `POST /api/books` - Crear libro (Admin)
-- `PUT /api/books/:id` - Actualizar libro (Admin)
-- `DELETE /api/books/:id` - Eliminar libro (Admin)
-
-### Ejemplares
-- `GET /api/copies` - Listar ejemplares
-- `GET /api/copies/available` - Ejemplares disponibles
-- `POST /api/copies` - Crear ejemplar (Admin)
-- `PUT /api/copies/:id/status` - Actualizar estado
-
-### Préstamos
-- `GET /api/loans` - Listar préstamos
-- `POST /api/loans` - Crear préstamo
-- `PUT /api/loans/:id/return` - Devolver préstamo
-- `GET /api/loans/my` - Mis préstamos
-
-### Google Books
-- `GET /api/google-books/search?q=query` - Buscar libros
-- `GET /api/google-books/isbn/:isbn` - Obtener por ISBN
-- `POST /api/google-books/enrich` - Enriquecer datos
-
-## 🌐 Despliegue en Vercel
-
-### 1. Configuración de Base de Datos
-
-**MongoDB Atlas (Recomendado)**
-1. Crear cuenta en [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Crear cluster
-3. Configurar red IP (0.0.0.0/0 para Vercel)
-4. Obtener connection string
-
-### 2. Variables de Entorno en Vercel
-
-```bash
-# Instalar Vercel CLI
-npm i -g vercel
-
-# Configurar variables
-vercel env add MONGODB_URI
-vercel env add MONGODB_DB
-vercel env add SECRET
-vercel env add GOOGLE_BOOKS_API_KEY
-vercel env add NODE_ENV production
-```
-
-### 3. Despliegue
-
-```bash
-# Desplegar
-vercel --prod
-
-# O con Git
-git push origin main
-```
-Link desplegado: https://biblio-icesi-iwl3vkuv0-santiagos-projects-a3f1c6d3.vercel.app/
-### 4. Sembrar datos en producción
-
-```bash
-# Conectar a Vercel y ejecutar seed
-vercel env pull .env.production
-npm run seed
-```
-
-## 🔒 Seguridad
-
-- **Autenticación JWT**: Tokens seguros con expiración
-- **Hashing de contraseñas**: bcrypt con salt rounds
-- **Validación de entrada**: Zod schemas
-- **Rate Limiting**: Protección contra ataques
-- **CORS**: Configuración de orígenes permitidos
-- **Variables de entorno**: Configuración segura
-
-## 📊 Monitoreo y Logs
-
-### Health Check
-```bash
-GET /health
-```
-
-### Logs en Vercel
-```bash
-vercel logs
-```
-
-## 🤝 Contribución
-
-1. Fork el proyecto
-2. Crear rama feature (`git checkout -b feature/AmazingFeature`)
-3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abrir Pull Request
-
-## 📝 Estructura del Proyecto
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 ```
-src/
-├── config/          # Configuración de base de datos
-├── controllers/     # Controladores de la API
-├── interfaces/      # Interfaces TypeScript
-├── middlewares/     # Middlewares de autenticación y validación
-├── models/          # Modelos de MongoDB
-├── routes/          # Rutas de la API
-├── schemas/         # Esquemas de validación
-├── services/        # Lógica de negocio
-└── index.ts         # Punto de entrada
 
-__tests__/
-├── integration/     # Tests de integración
-├── postman/         # Colección de Postman
-└── *.test.ts        # Tests unitarios
+### Resultado
 
-scripts/
-├── migrate.js       # Migraciones de base de datos
-└── mongo-init.js    # Inicialización de MongoDB
+* Los análisis se pueden ver en:
+  [https://sonarcloud.io](https://sonarcloud.io)
+* La cobertura se basa en el archivo `coverage/lcov.info` generado por Jest.
+
+![alt text](img/SonarQube.png)
+
+
+## 2. Pipeline: Escaneo de vulnerabilidades con Trivy + GitHub Security
+
+### Archivo
+
+`.github/workflows/trivy-scan.yml`
+
+### Descripción
+
+Este pipeline ejecuta Trivy, una herramienta de código abierto para analizar vulnerabilidades en:
+
+* Código fuente (filesystem)
+* Dependencias de Node.js (npm/yarn)
+* Configuraciones inseguras
+
+Genera un reporte en formato SARIF, compatible con GitHub Security, que se muestra automáticamente en la pestaña **Code scanning alerts** del repositorio.
+
+### Ejemplo de pipeline
+
+```yaml
+name: Trivy Filesystem Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy-fs-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'         
+          format: 'sarif'              
+          output: 'trivy-results.sarif'
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
 ```
 
-## 🐛 Troubleshooting
+### Resultado
 
-### Error de conexión a MongoDB
-```bash
-# Verificar que MongoDB esté corriendo
-npm run docker:logs
+1. Ve a tu repositorio en GitHub → **Security → Code scanning alerts**
+2. Verás los hallazgos detectados por Trivy clasificados por severidad.
+3. Puedes inspeccionar cada vulnerabilidad directamente desde la interfaz de GitHub.
 
-# Verificar variables de entorno
-echo $MONGODB_URI
-```
+![alt text](img/TrivyScan.png)
 
-### Tests fallando
-```bash
-# Limpiar cache de Jest
-npm test -- --clearCache
+## 3. Integración de ambos workflows
 
-# Ejecutar tests específicos
-npm test -- --testNamePattern="UserService"
-```
+Ambos workflows pueden convivir sin problema en tu repositorio.
+GitHub Actions ejecutará cada uno de manera independiente, permitiendo:
 
-### Error en Vercel
-```bash
-# Verificar logs
-vercel logs
+* Controlar la calidad del código (SonarQube)
+* Detectar vulnerabilidades de seguridad (Trivy)
 
-# Verificar variables de entorno
-vercel env ls
-```
 
-## 📄 Licencia
+## Requisitos previos
 
-Este proyecto está bajo la Licencia ISC.
+1. Crear un token de SonarQube en [https://sonarcloud.io](https://sonarcloud.io)
+   y agregarlo como Secret en tu repositorio:
+   `Settings → Secrets → Actions → New repository secret`
 
-## 👥 Autores
+   * **Nombre:** `SONAR_TOKEN`
+   * **Valor:** tu token de SonarCloud
 
-- Alejandro Castro
-- Santiago Cardenas
+2. Asegúrate de tener el archivo `sonar-project.properties` en la raíz del proyecto.
 
-## 🙏 Agradecimientos
+3. Tener un archivo `package.json` con scripts de test configurados (por ejemplo, Jest).
 
-- Google Books API por el enriquecimiento de metadatos
-- MongoDB Atlas por el hosting de base de datos
-- Vercel por el hosting de la API
