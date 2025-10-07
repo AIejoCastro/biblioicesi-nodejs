@@ -5,25 +5,25 @@ on:
     branches: [ main ]
   pull_request:
   schedule:
-    - cron: '0 3 * * 1'  # Escaneo automático cada lunes a las 3 AM
+    - cron: '0 3 * * 1' # Lunes a las 3 AM
 
 jobs:
-  trivy-scan:
-    name: Run Trivy Security Scan
+  trivy:
+    name: Run Trivy Scan
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      security-events: write  # Necesario para subir resultados a GitHub Security
+      security-events: write
       actions: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Escaneo de vulnerabilidades en dependencias (Node.js, npm, etc.)
-      - name: Run Trivy FS scan
-        uses: aquasecurity/trivy-action@master
+      # Escaneo de dependencias (Node.js, etc.)
+      - name: Run Trivy FS scan (SARIF)
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: 'fs'
           ignore-unfixed: true
@@ -31,14 +31,21 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
 
-      # Subir resultados al panel de seguridad de GitHub
+      # Verificar que el archivo SARIF se generó
+      - name: Check SARIF file
+        run: |
+          echo "Verificando archivo SARIF..."
+          ls -lh trivy-results.sarif
+
+      # Subir resultados al panel de seguridad
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: trivy-results.sarif
 
-      - name: Show summary in console
-        uses: aquasecurity/trivy-action@master
+      # Mostrar un resumen legible en consola
+      - name: Show Trivy summary
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           scan-type: 'fs'
           ignore-unfixed: true
