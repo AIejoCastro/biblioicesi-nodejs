@@ -1,19 +1,35 @@
-name: Build
+name: Build and Analyze
+
 on:
   push:
     branches:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
+
 jobs:
   sonarqube:
-    name: SonarQube
-    runs-on: macos-latest
+    name: SonarCloud Analysis
+    runs-on: macos-latest  # puedes cambiar a ubuntu-latest si quieres que corra más rápido
+
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: SonarQube Scan
+          fetch-depth: 0  # importante para obtener historial completo del repo
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20  # usa la versión de Node que tengas localmente
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests and generate coverage
+        run: npm test -- --coverage
+
+      - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          
