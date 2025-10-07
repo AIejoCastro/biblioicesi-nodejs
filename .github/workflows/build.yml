@@ -10,7 +10,7 @@ on:
 jobs:
   sonarqube:
     name: SonarCloud Analysis
-    runs-on: macos-latest  # puedes cambiar a ubuntu-latest si quieres que corra más rápido
+    runs-on: ubuntu-latest  # puedes cambiar a ubuntu-latest si quieres que corra más rápido
 
     steps:
       - uses: actions/checkout@v4
@@ -32,4 +32,3 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          
